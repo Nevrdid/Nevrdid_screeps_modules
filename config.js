@@ -1,9 +1,9 @@
 global.config = {
   layout: {
-    plainCost: 1,
-    swampCost: 1,
+    plainCost: 2,
+    swampCost: 2,
   },
   debug: {
     paths: true,
-  },
-};
+  }
+}
