@@ -38,148 +38,52 @@
 //
 ////////////////////////////////////////////////////////////////////////////////
 
-global.Pathing = {
-  getInternPath: function (pos, target) {
-    let range;
-    if (_.isString(target)) {
-      range = 1;
-      target = Game.getObjectById(target).pos;
-    } else if (target instanceof RoomPosition) {
-      range = 0;
+Room.prototype.initPaths = function() {
+  let center = this.controller && this.controller.pos || new RoomPosition(25, 25, this.name),
+    i;
+  center = center.findNearestTerrain();
+  console.log(JSON.stringify(center));
+  global._CostMatrix = new PathFinder.CostMatrix;
+  for (i = 0; i < 50; i++) {
+    let value = config.layout.borderAvoid;
+    _CostMatrix.set(i, 0, 10);
+    _CostMatrix.set(i, 49, 10);
+    _CostMatrix.set(0, i, 10);
+    _CostMatrix.set(49, i, 10);
+
+    _CostMatrix.set(i, 1, 10);
+    _CostMatrix.set(i, 48, 10);
+    _CostMatrix.set(1, i, 10);
+    _CostMatrix.set(48, i, 10);
+
+  }
+
+  console.log(`CPU at start: ====----||${Game.cpu.getUsed()}||----====`);
+  this.memory.paths = { list: [] };
+  this.endPoints = this.getEndPoints();
+  let n = 0;
+  while (n < 8) {
+    if (n < 4) {
+      new Path(center, 'E' + (n + 1));
+    } else if (n < 7) {
+      new Path(center, 'S' + (n - 3));
+    } else {
+      new Path(center, 'M');
     }
 
-    if (!target || target.roomName !== pos.roomName) {
-      return false;
-    }
-    /**
-    if (Math.floor(Math.sqrt((pos.x - target.x)**2 + (pos.y - target.y)**2)) < 2) {
-      target = target.findNearestTerrain(1);
-    }
-    **/
-    return PathFinder.search(
-      new RoomPosition(pos.x, pos.y, pos.roomName), {
-        pos: target,
-        range: range,
-      }, {
-        maxRooms: 1,
-        swampCost: config.layout.swampCost,
-        plainCost: config.layout.plainCost,
-        roomCallback: (roomName) => _CostMatrix.clone(),
-      }
-    ).path;
-  },
+    console.log(`CPU (n=${n}): ====----||${Game.cpu.getUsed()}||----====`);
+    n++;
+  }
+
+  this.printRoomCosts(_CostMatrix);
 };
 
-class Path {
-  constructor(startPos, pathName) {
-    let room = Game.rooms[startPos.roomName]
-    if (room.endPoints[pathName]) {
-      this.name = pathName;
-      this.room = room;
-      this.unformatedPathArray = Pathing.getInternPath(startPos, room.endPoints[pathName]);
+Room.prototype.erasePaths = function() {
+  this.memory.paths = {};
+  this.memory.pos = {};
+};
 
-      if (this.unformatedPathArray) {
-        this.unformatedPath = this.personalSerial();
-        this.parent = {};
-        this.deep = 0;
-        this.pos = 0;
-        this.formated = false;
-        this.path = '';
-        this.searchParent();
-        if (config.debug.paths) {
-          console.log(`Path to ${pathName} created and reformated.`);
-        }
-
-        return true;
-      }
-    }
-
-    if (config.debug.paths) {
-      console.log(`Path to ${pathName} not exist`);
-    }
-
-    return false;
-  }
-
-  personalSerial() {
-    var prevPos,
-        serializedPath = '',
-        pos,
-        dirs = {
-          ['0-1']: '1',
-          ['1-1']: '2',
-          ['10']: '3',
-          ['11']: '4',
-          ['01']: '5',
-          ['-11']: '6',
-          ['-10']: '7',
-          ['-1-1']: '8'
-        };
-    for (pos of this.unformatedPathArray) {
-      _CostMatrix.set(pos.x, pos.y, 1);
-      if (prevPos) {
-        let delta = `${pos.x - prevPos.x}${pos.y - prevPos.y}`;
-        serializedPath += dirs[delta];
-      }
-      prevPos = pos;
-    }
-    return serializedPath;
-  }
-
-  searchParent() {
-    let paths = this.room.memory.paths; // use cache one instead of deserialize
-    let pathsNames = paths.list[this.deep];
-    let pathsAmount = pathsNames ? pathsNames.length : 0;
-    let p = 0;
-    while (p < pathsAmount) {
-      if (_.eq(this.unformatedPathArray[this.pos], paths[pathsNames[p]].startPos)) {
-        this.parent = {
-          name: pathsNames[p],
-          pos: 0,
-        };
-        this.browseParent();
-        return true;
-      }
-
-      p++;
-    }
-
-    this.finalizePath();
-  }
-
-  browseParent() {
-    while (this.unformatedPath[this.pos]) {
-      if (!_(this.unformatedPath[this.pos]).eq(
-        this.room.memory.paths[this.parent.name].path[this.parent.pos])) {
-        this.deep++;
-        this.searchParent();
-        break;
-      }
-
-      this.pos++;
-      this.parent.pos++;
-    }
-  }
-
-  finalizePath() {
-    while (this.unformatedPath[this.pos]) {
-      this.path += this.unformatedPath[this.pos];
-      this.pos++;
-    }
-
-    this.formated = true;
-    this.room.memory.paths.list[this.deep] = this.room.memory.paths.list[this.deep] || [];
-    this.room.memory.paths.list[this.deep].push(this.name);
-    this.room.memory.paths[this.name] = {
-      path: this.path,
-      parentNode: this.parent,
-      startPos: this.unformatedPathArray[this.unformatedPathArray.length - this.path.length - 1],
-      endPos: this.unformatedPathArray[this.pos - 1],
-    };
-  }
-}
-
-Room.prototype.getEndPoints = function () {
+Room.prototype.getEndPoints = function() {
   let endPoints = {};
   let i;
 
@@ -228,12 +132,15 @@ class Pos {
     this.y = y;
   }
 }
-Room.prototype.printRoomCosts = function (matrix, proportional = false,  aroundPos = false) {
-  let x = 0, y = 0, maxCost = 5, val, tiles, cost, redHex, greenHex, color;
+Room.prototype.printRoomCosts = function(matrix, proportional = false, aroundPos = false) {
+  let x = 0,
+    y = 0,
+    maxCost = 5,
+    val, tiles, cost, redHex, greenHex, color;
   let start = new Pos(Math.max(aroundPos && aroundPos.x - 3, 0) || 0,
-                      Math.max(aroundPos && aroundPos.y - 3, 0) || 0);
+    Math.max(aroundPos && aroundPos.y - 3, 0) || 0);
   let end = new Pos(Math.min(aroundPos && aroundPos.x + 3, 49) || 49,
-                    Math.min(aroundPos && aroundPos.y + 3, 49) || 49);
+    Math.min(aroundPos && aroundPos.y + 3, 49) || 49);
   console.log("costs:");
 
   if (proportional) {
@@ -257,55 +164,11 @@ Room.prototype.printRoomCosts = function (matrix, proportional = false,  aroundP
       redHex = (val).toString(16);
       greenHex = (256 - val).toString(16);
       color = (redHex[1] ? redHex : '0' + (redHex[0] || '0')) +
-              (greenHex[1] ? greenHex : '0' + (greenHex[0] || '0')) +
-              '00';
+        (greenHex[1] ? greenHex : '0' + (greenHex[0] || '0')) +
+        '00';
       tiles.push('<a style="color: #' + color + '">███</a>');
     }
 
     console.log(tiles.join(''));
   }
-};
-
-Room.prototype.init = function () {
-  let center = this.controller && this.controller.pos || new RoomPosition(25, 25, this.name),
-      i;
-  center = center.findNearestTerrain();
-  console.log(JSON.stringify(center));
-  global._CostMatrix = new PathFinder.CostMatrix;
-  for (i = 0; i < 50; i++) {
-    let value = config.layout.borderAvoid;
-    _CostMatrix.set(i, 0,  10);
-    _CostMatrix.set(i, 49, 10);
-    _CostMatrix.set(0, i, 10);
-    _CostMatrix.set(49, i, 10);
-
-    _CostMatrix.set(i, 1, 10);
-    _CostMatrix.set(i, 48, 10);
-    _CostMatrix.set(1, i, 10);
-    _CostMatrix.set(48, i, 10);
-
-  }
-
-  console.log(`CPU at start: ====----||${Game.cpu.getUsed()}||----====`);
-  this.memory.paths = { list: [] };
-  this.endPoints = this.getEndPoints();
-  let n = 0;
-  while (n < 8) {
-    if (n < 4) {
-      new Path(center, 'E' + (n + 1));
-    } else if (n < 7) {
-      new Path(center, 'S' + (n - 3));
-    } else {
-      new Path(center, 'M');
-    }
-
-    console.log(`CPU (n=${n}): ====----||${Game.cpu.getUsed()}||----====`);
-    n++;
-  }
-
-  this.printRoomCosts(_CostMatrix);
-};
-
-Room.prototype.erase = function () {
-  delete this.memory.paths;
 };

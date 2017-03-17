@@ -1,38 +1,36 @@
 'use strict';
 
-let roomName,
-    room;
+Room.prototype.resetVisual = function() {
+  this.memory.t = 0;
+  this.memory.pos = {};
+};
 
-for (roomName in Game.rooms) {
-  room = Game.rooms[roomName];
-  room.memory.t = 0;
-  room.memory.pos = {};
-  room.memory.paths = {};
-  room.erase();
-  room.init();
-}
-
-Room.prototype.pathsVisual = function () {
+Room.prototype.pathsVisual = function() {
   if (!this) {
     return false;
   }
+
   if (Game.time % 50 === 0) {
     this.memory.t = 0;
     this.memory.pos = {};
   }
-  let t = this.memory.t,
-      path,
-      deep,
-      pathName,
-      pos;
+
+  let t = this.memory.t;
+  let path;
+  let pathName;
+  let pos;
+
+  let deep = 0;
+  let sameDeepPaths;
+
   console.log('--- t: ', t);
   let color = [
     '#505050',
     '#00ff00',
     '#0000ff',
-    '#ff0000',
+    '#ff0000'
   ];
-  for (deep in this.memory.paths.list) {
+  for (sameDeepPaths of this.memory.paths.list) {
     for (pathName of this.memory.paths.list[deep]) {
       path = this.memory.paths[pathName];
       if (path) {
@@ -65,16 +63,16 @@ Room.prototype.pathsVisual = function () {
           this.memory.pos[pathName] = pos;
         }
 
-        this.visual.circle(this.memory.pos[pathName].x, this.memory.pos[pathName].y,
-          {
-            radius: 0.75,
-            fill: color[deep],
-            opacity: 1,
-          });
+        this.visual.circle(this.memory.pos[pathName].x, this.memory.pos[pathName].y, {
+          radius: 0.75,
+          fill: color[deep],
+          opacity: 1
+        });
         this.visual.text(pathName, this.memory.pos[pathName].x, this.memory.pos[pathName].y + 0.2);
       }
     }
+    deep++;
   }
 
   this.memory.t++;
-}
+};

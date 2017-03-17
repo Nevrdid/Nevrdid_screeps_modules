@@ -1,6 +1,6 @@
 'use strict';
 
-RoomPosition.prototype.applyDir= function(dir) {
+RoomPosition.prototype.applyDir = function(dir) {
   let delta = [
     [0, -1],
     [1, -1],
@@ -37,7 +37,7 @@ RoomPosition.prototype.findNearestTerrain = function(maxRange = 49) {
     }
     range++;
   }
-}
+};
 
 RoomPosition.prototype.costMatrixAvoid = function() {
   let i = 0;
@@ -49,10 +49,40 @@ RoomPosition.prototype.costMatrixAvoid = function() {
     [0, 1],
     [-1, 1],
     [-1, 0],
-    [-1, -1],
+    [-1, -1]
   ];
   while (i < 8) {
     _CostMatrix.set(this.x + delta[i][0], this.y + delta[i][1], 254);
     i++;
   }
+};
+
+RoomPosition.prototype.getInternPath = function(target) {
+  let range;
+  if (_.isString(target)) {
+    range = 1;
+    target = Game.getObjectById(target).pos;
+  } else if (target instanceof RoomPosition) {
+    range = 0;
+  }
+
+  if (!target || target.roomName !== this.roomName) {
+    return false;
+  }
+  /**
+  if (Math.floor(Math.sqrt((pos.x - target.x)**2 + (pos.y - target.y)**2)) < 2) {
+    target = target.findNearestTerrain(1);
+  }
+  **/
+  return PathFinder.search(
+    new RoomPosition(this.x, this.y, this.roomName), {
+      pos: target,
+      range: range
+    }, {
+      maxRooms: 1,
+      swampCost: config.layout.swampCost,
+      plainCost: config.layout.plainCost,
+      roomCallback: (roomName) => _CostMatrix.clone()
+    }
+  ).path;
 };
