@@ -5,14 +5,39 @@ Room.prototype.resetVisual = function() {
   this.memory.pos = {};
 };
 
+Room.prototype.displayPaths = function() {
+  let pos = new RoomPosition(25, 25, this.name);
+  let n = 0;
+  let pathLength;
+  let r;
+
+  _.each(this.memory.paths, (path, pathName) => {
+    if (pathName !== 'list') {
+      r = 0;
+      pathLength = path.path.length;
+
+      pos.x = path.startPos.x;
+      pos.y = path.startPos.y;
+      while (r < pathLength) {
+        this.visual.circle(pos.x, pos.y, {
+          fill: '#ffffff',
+          opacity: 0.8
+        });
+        pos.applyDir(path.path[r]);
+        r++;
+      }
+    }
+    n++;
+  });
+}
+
 Room.prototype.pathsVisual = function() {
   if (!this) {
     return false;
   }
 
-  if (Game.time % 50 === 0) {
-    this.memory.t = 0;
-    this.memory.pos = {};
+  if (!(Game.time % config.delays.resetRoadsAnim)) {
+    this.resetVisual();
   }
 
   let t = this.memory.t;

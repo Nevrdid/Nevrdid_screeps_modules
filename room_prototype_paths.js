@@ -1,5 +1,4 @@
 'use strict';
-
 /**
  *
  * Paths by nodes module.
@@ -37,26 +36,29 @@
 // express: double the road,
 //
 ////////////////////////////////////////////////////////////////////////////////
+Room.prototype.initCostMatrix = function() {
+  let i;
+  for (i = 0; i < 50; i++) {
+    _CostMatrix.set(i, 0, 5);
+    _CostMatrix.set(i, 49, 5);
+    _CostMatrix.set(0, i, 5);
+    _CostMatrix.set(49, i, 5);
 
+    _CostMatrix.set(i, 2, 5);
+    _CostMatrix.set(i, 47, 5);
+    _CostMatrix.set(2, i, 5);
+    _CostMatrix.set(47, i, 5);
+
+  }
+};
 Room.prototype.initPaths = function() {
-  let center = this.controller && this.controller.pos || new RoomPosition(25, 25, this.name),
-    i;
+  let center = this.controller && this.controller.pos || new RoomPosition(25, 25, this.name);
   center = center.findNearestTerrain();
   console.log(JSON.stringify(center));
   global._CostMatrix = new PathFinder.CostMatrix;
-  for (i = 0; i < 50; i++) {
-    let value = config.layout.borderAvoid;
-    _CostMatrix.set(i, 0, 10);
-    _CostMatrix.set(i, 49, 10);
-    _CostMatrix.set(0, i, 10);
-    _CostMatrix.set(49, i, 10);
+  this.initCostMatrix();
+  //this.placeStructures();
 
-    _CostMatrix.set(i, 1, 10);
-    _CostMatrix.set(i, 48, 10);
-    _CostMatrix.set(1, i, 10);
-    _CostMatrix.set(48, i, 10);
-
-  }
 
   console.log(`CPU at start: ====----||${Game.cpu.getUsed()}||----====`);
   this.memory.paths = { list: [] };
@@ -64,11 +66,11 @@ Room.prototype.initPaths = function() {
   let n = 0;
   while (n < 8) {
     if (n < 4) {
-      new Path(center, 'E' + (n + 1));
+      _Path.create(center, 'E' + (n + 1));
     } else if (n < 7) {
-      new Path(center, 'S' + (n - 3));
+      _Path.create(center, 'S' + (n - 3));
     } else {
-      new Path(center, 'M');
+      _Path.create(center, 'M');
     }
 
     console.log(`CPU (n=${n}): ====----||${Game.cpu.getUsed()}||----====`);
@@ -81,6 +83,13 @@ Room.prototype.initPaths = function() {
 Room.prototype.erasePaths = function() {
   this.memory.paths = {};
   this.memory.pos = {};
+};
+
+Room.prototype.checkPaths = function() {
+  if ((Game.time % config.delays.pathsRebuild) === 0) {
+    this.erasePaths();
+    this.initPaths();
+  }
 };
 
 Room.prototype.getEndPoints = function() {
@@ -132,6 +141,7 @@ class Pos {
     this.y = y;
   }
 }
+
 Room.prototype.printRoomCosts = function(matrix, proportional = false, aroundPos = false) {
   let x = 0,
     y = 0,

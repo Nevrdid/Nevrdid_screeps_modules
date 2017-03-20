@@ -1,6 +1,9 @@
 'use strict';
 
 RoomPosition.prototype.applyDir = function(dir) {
+  if (!dir || dir < 1 || dir > 8) {
+      return false;
+  }
   let delta = [
     [0, -1],
     [1, -1],
@@ -58,12 +61,8 @@ RoomPosition.prototype.costMatrixAvoid = function() {
 };
 
 RoomPosition.prototype.getInternPath = function(target) {
-  let range;
   if (_.isString(target)) {
-    range = 1;
-    target = Game.getObjectById(target).pos;
-  } else if (target instanceof RoomPosition) {
-    range = 0;
+    target = Game.getObjectById(target).pos.findNearestTerrain(1);
   }
 
   if (!target || target.roomName !== this.roomName) {
@@ -77,7 +76,7 @@ RoomPosition.prototype.getInternPath = function(target) {
   return PathFinder.search(
     new RoomPosition(this.x, this.y, this.roomName), {
       pos: target,
-      range: range
+      range: 0
     }, {
       maxRooms: 1,
       swampCost: config.layout.swampCost,

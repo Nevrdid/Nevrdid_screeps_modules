@@ -1,7 +1,7 @@
 'use strict';
 
-class Path {
-  constructor(startPos, pathName) {
+global._Path = {
+  create: function(startPos, pathName) {
     let room = Game.rooms[startPos.roomName];
     if (room.endPoints[pathName]) {
       this.name = pathName;
@@ -29,9 +29,8 @@ class Path {
     }
 
     return false;
-  }
-
-  personalSerial() {
+  },
+  personalSerial: function() {
     let prevPos;
     let serializedPath = '';
     let pos;
@@ -56,9 +55,8 @@ class Path {
     }
 
     return serializedPath;
-  }
-
-  searchParent() {
+  },
+  searchParent: function() {
     let paths = this.room.memory.paths; // use cache one instead of deserialize
     let pathsNames = paths.list[this.deep];
     let pathsAmount = pathsNames ? pathsNames.length : 0;
@@ -76,9 +74,8 @@ class Path {
       p++;
     }
     this.finalizePath();
-  }
-
-  browseParent() {
+  },
+  browseParent: function() {
     while (this.unformatedPath[this.pos]) {
       if (!_(this.unformatedPath[this.pos]).eq(
           this.room.memory.paths[this.parent.name].path[this.parent.pos])) {
@@ -90,9 +87,8 @@ class Path {
       this.pos++;
       this.parent.pos++;
     }
-  }
-
-  finalizePath() {
+  },
+  finalizePath: function() {
     while (this.unformatedPath[this.pos]) {
       this.path += this.unformatedPath[this.pos];
       this.pos++;
