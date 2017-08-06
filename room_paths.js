@@ -107,14 +107,20 @@ Room.prototype.getEndPoints = function() {
   }
   
   var mineral = this.find(FIND_MINERALS)[0];
-  mineral.pos.bordersAvoid();
-  endPoints.M = mineral.id;
+  if ( mineral ) {
+    mineral.pos.bordersAvoid();
+    endPoints.M = mineral.id;
+  }
+  
   
   var spawn = this.find(FIND_MY_SPAWNS)[0];
-  spawn.pos.bordersAvoid();
-  endPoints.Sp = spawn.id;
+  if ( spawn ) {
+    spawn.pos.bordersAvoid();
+    endPoints.Sp = spawn.id;  
+  }
   
-  endPoints.C = this.controller.id
+  
+  endPoints.C = this.controller && this.controller.id
   
   return endPoints;
 };
