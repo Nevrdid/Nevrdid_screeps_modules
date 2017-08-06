@@ -22,7 +22,12 @@ RoomPosition.prototype.bordersAvoid = function() {
     [-1, -1]
   ];
   while (i < 8) {
-    Game.rooms[this.roomName].CostMatrix.set(this.x + delta[i][0], this.y + delta[i][1], 250);
+    pos = this;
+    pos.x += delta[i][0];
+    pos.y += delta[i][1];
+    if (pos.lookFor(LOOK_TERRAIN) !== 'wall') {
+        Game.rooms[this.roomName].CostMatrix.set(pos.x , pos.y, 250);
+    }
     i++;
   }
 };
