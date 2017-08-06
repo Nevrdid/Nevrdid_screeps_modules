@@ -1,24 +1,30 @@
+'use strict';
+
+global.Path = require ('class_path');
+
 require('config');
-require('object_VRoom');
-require('object_Path');
-require('roomPosition_prototype_paths');
-require('room_prototype_paths');
+require('utils');
+require('roomPosition_utils');
+require('roomPosition_paths');
+require('room_paths');
 require('visual');
 
-_.each(Game.rooms, room => {
-  room.erasePaths();
-  room.initPaths();
-  room.resetVisual();
-});
+let reset = config.reset;
+if (reset.paths) {
+    _.each(Game.rooms, room => {
+        room.initPaths();
+    }); 
+}  
 
 module.exports.loop = function() {
-  _.each(Game.rooms, room => {
-    room.checkPaths();
-    room.pathsVisual();
-    room.displayPaths();
-
-    //room.manageVRoom;
-  });
-
-  console.log(`/////// CPU USED: ${Game.cpu.getUsed()}`);
-};
+    _.each(Game.rooms, room => {
+        if (config.visual.paths) {
+            room.displayPaths();
+        }
+        
+    });
+    if (config.debug.cpu) {
+        console.log(`/////// CPU USED: ${Game.cpu.getUsed()}`);
+    }
+    
+}
