@@ -5,30 +5,30 @@
  * RoomPosition prototypes :
  * 
  * 12 - bordersAvoid() ---> make costMatrix avoid borders of pos.
- * 30 - getInternPath --->
+ * 35 - getInternPath(target)
  * 
  * */
  
-RoomPosition.prototype.bordersAvoid = function() {
-  let i = 0;
-  let delta = [
-    [0, -1],
-    [1, -1],
-    [1, 0],
-    [1, 1],
-    [0, 1],
-    [-1, 1],
-    [-1, 0],
-    [-1, -1]
-  ];
-  while (i < 8) {
-    pos = this;
-    pos.x += delta[i][0];
-    pos.y += delta[i][1];
-    if (pos.lookFor(LOOK_TERRAIN) !== 'wall') {
-        Game.rooms[this.roomName].CostMatrix.set(pos.x , pos.y, 250);
+RoomPosition.prototype.bordersAvoid = function(maxRange = 1) {
+  let range = 1,
+    side = 0,
+    pos = [0, 0],
+    i,
+    terrain,
+    structure;
+    let pos3d = new RoomPosition(0, 0, this.roomName);
+  while (range <= maxRange) {
+    for (side = 0; side < 4; side++) {
+      pos = [side % 2 ? (side - 2) * range : 0, (side % 2) === 0 ? (side - 1) * range : 0];
+      for (i = -range; i <= range; i++) {
+        pos3d.x = this.x + (!pos[0] ? i : pos[0]);
+        pos3d.y = this.y + (!pos[1] ? i : pos[1]);
+        if (pos3d.isOpen()) {
+            Game.rooms[this.roomName].CostMatrix.set(pos3d.x, pos3d.y, config.layout.bordersValue - config.layout.bordersCostReduceByDistance * (range-1));
+        }
+      } 
     }
-    i++;
+    range++;
   }
 };
  
@@ -42,8 +42,7 @@ RoomPosition.prototype.getInternPath = function(target) {
     return false;
   }
   let range = 0;
-  if (target.lookFor(LOOK_STRUCTURES).length
-        || target.lookFor(LOOK_TERRAIN) === 'wall') {
+  if (!target.isOpen()) {
             range = 1
         }
   

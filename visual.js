@@ -1,5 +1,22 @@
 'use strict';
 
+Room.prototype.displayCM = function() {
+    let CM = PathFinder.CostMatrix.deserialize(this.memory.cm);
+    for (let i = 0; i<50; i++) {
+        for(let j = 0; j < 50; j++) {
+            let cost = CM.get(i, j);
+            //if (cost < 255) {
+                this.visual.rect(i - 0.5, j - 0.5,
+                    1 ,1 , {
+                    fill: '#000000',
+                    opacity: cost / 20
+                }); 
+            //}
+            
+        }
+    }
+}
+
 Room.prototype.displayPaths = function() {
   let pos = new RoomPosition(25 ,25 ,this.name);
   let pathLength;
@@ -43,3 +60,4 @@ Room.prototype.displayPaths = function() {
       })
   });
 }
+
